@@ -1,0 +1,4 @@
+
+class BlockNotFoundException implements Exception {
+
+}
