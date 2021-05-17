@@ -32,7 +32,9 @@ class BlockDto {
         this.height,
         this.receivedTime,
         this.relayedBy,
-        this.tx});
+        this.tx
+      }
+  );
 
   BlockDto.fromJson(Map<String, dynamic> json) {
     hash = json['hash'];

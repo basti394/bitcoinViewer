@@ -1,4 +1,4 @@
-import 'package:bitcoin_viewer/test.dart';
+import 'package:bitcoin_viewer/pages/SearchPage.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -14,7 +14,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Test()
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Bitcoin Viewer BETA 1.0'),
+        ),
+        body: SearchPage(),
+      )
     );
   }
 }
