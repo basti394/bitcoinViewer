@@ -33,8 +33,8 @@ class _SearchPageState extends State<SearchPage> {
   BlockchainService _blockchainService;
   BlockDto blockDto;
   TransactionDto transactionDto;
-  bool searching = false;
-  double bottomPosition = -70;
+  final double widthFactor = 0.9;
+  final double heightFactor = 0.65;
   var redrawObject;
 
   @override
@@ -58,7 +58,8 @@ class _SearchPageState extends State<SearchPage> {
         SizedBox(height: 30),
         searchTile(context),
         SizedBox(height: 30),
-        result(context)
+        result(context),
+        input != null ? toolBar(context) : Container()
       ],
     );
   }
@@ -135,7 +136,7 @@ class _SearchPageState extends State<SearchPage> {
                 if (result != null) {
                   print('$result');
                   setState(() {
-                    this.input = result;
+                    this.setInput(result);
                   });
                 }
               }
@@ -154,14 +155,24 @@ class _SearchPageState extends State<SearchPage> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               this.blockDto = snapshot.data;
-              return blockTile(context);
+              return SearchBlockComponent(blockDto: this.blockDto, searchPreviousBlock: () => setInput(this.blockDto.prevBlock));
             }
             if (snapshot.hasError) {
               return Center(
                   child: Text('Es gibt keinen Block mit diesem Hash!')
               );
             }
-            return CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo));
+            return Container(
+              height: MediaQuery.of(context).size.height * heightFactor,
+              width: MediaQuery.of(context).size.width * widthFactor,
+              child: Center(
+                child: Container(
+                  height: 50,
+                  width: 50,
+                  child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo)),
+                ),
+              )
+            );
           }
         );
       }
@@ -171,42 +182,28 @@ class _SearchPageState extends State<SearchPage> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             this.transactionDto = snapshot.data;
-            return transactionTile(context);
+            return SearchTransactionComponent(transactionDto: this.transactionDto, searchWallet: () => print('Not implemented yet'));
           }
           if (snapshot.hasError) {
             return Center(
                 child: Text('Es gibt keine Transaktion mit diesem Hash!')
             );
           }
-          return CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo));
+          return Container(
+              height: MediaQuery.of(context).size.height * heightFactor,
+              width: MediaQuery.of(context).size.width * widthFactor,
+              child: Center(
+                child: Container(
+                  height: 50,
+                  width: 50,
+                  child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo)),
+                ),
+              )
+          );
         }
       );
     }
-    return Text('');
-  }
-
-  Widget blockTile(BuildContext context) {
-    return Container(
-        child: Column(
-          children: [
-            SearchBlockComponent(blockDto: this.blockDto, searchPreviousBlock: () => setInput(this.blockDto.prevBlock)),
-            SizedBox(height: 10),
-            toolBar(context),
-          ],
-        )
-    );
-  }
-
-  Widget transactionTile(BuildContext context) {
-    return Container(
-        child: Column(
-          children: [
-            SearchTransactionComponent(transactionDto: this.transactionDto, searchWallet: () => print('Not implemented yet')),
-            SizedBox(height: 10),
-            toolBar(context),
-          ],
-        )
-    );
+    return Container();
   }
 
   Widget toolBar(BuildContext context) {
@@ -228,6 +225,7 @@ class _SearchPageState extends State<SearchPage> {
       ],
     );
   }
+  
   Widget shareButton(BuildContext context) {
     return QuadraticButton(Icon(Icons.share, color: Colors.white), () => Share.share(this.blockDto == null ? 'https://www.blockchain.com/btc/tx/${this.transactionDto.hash}' : 'https://www.blockchain.com/btc/block/${this.blockDto.hash}'));
   }
@@ -280,6 +278,11 @@ class _SearchPageState extends State<SearchPage> {
   Widget prevBlockButton(BuildContext context) {
     return QuadraticButton(Icon(Icons.arrow_back_ios_outlined, color: Colors.white), () => this.setInput(blockDto.prevBlock));
   }
+}
+
+class AlwaysDisabledFocusNode extends FocusNode {
+  @override
+  bool get hasFocus => false;
 }
 
 
