@@ -24,15 +24,40 @@ dependencies:
   flutter:
     sdk: flutter
 
+  share: ^2.0.4
+  fluttertoast: ^8.0.6
+  qr_code_scanner: 0.4.0
+  permission_handler: ^8.0.1
+  intl: ^0.17.0
+  skeleton_loader: ^2.0.0+4
+  barcode_widget: ^1.5.0
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.1
 
+dependency_overrides:
+  args: '2.1.1'
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   http: 0.12.2
+  animations: ^2.0.0
+  flutter_native_splash: ^1.2.0
+  flutter_launcher_icons: ^0.9.0
+
+flutter_native_splash:
+  color: "#3f51b5"
+  image: assets\logo2.png
+  android: true
+  ios: true
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/BTCLogo.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

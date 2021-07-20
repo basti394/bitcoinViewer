@@ -1,5 +1,6 @@
 import 'package:bitcoin_viewer/pages/SearchPage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(MyApp());
@@ -13,12 +14,17 @@ class MyApp extends StatelessWidget {
       title: 'Bitcoin Viewer',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        canvasColor: Colors.transparent
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Bitcoin Viewer BETA 1.0'),
+      home: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Container(
+            color: Colors.white,
+            child: SearchPage(),
+          )
         ),
-        body: SearchPage(),
       )
     );
   }

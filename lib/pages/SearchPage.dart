@@ -1,8 +1,22 @@
 
-import 'package:bitcoin_viewer/components/searcher.dart';
+import 'package:barcode_widget/barcode_widget.dart';
+import 'package:bitcoin_viewer/components/Buttons/QuadraticButton.dart';
+import 'package:bitcoin_viewer/components/SearchComponents/SearchTransactionComponent.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/BlockDto.dart';
+import 'package:bitcoin_viewer/exceptions/BlockNotFoundException.dart';
+import 'package:bitcoin_viewer/exceptions/TransactionNotFoundException.dart';
+import 'package:bitcoin_viewer/pages/ScannerPage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:bitcoin_viewer/components/SearchComponents/SearchBlockComponent.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/BlockDto.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/TransaktionDto.dart';
 import 'package:bitcoin_viewer/services/BlockchainService.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share/share.dart';
+import 'package:skeleton_loader/skeleton_loader.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key key}) : super(key: key);
@@ -14,8 +28,14 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
 
   final TextEditingController _controller = new TextEditingController();
+  String input;
+  int searchCounter = 0;
   BlockchainService _blockchainService;
-  var test;
+  BlockDto blockDto;
+  TransactionDto transactionDto;
+  bool searching = false;
+  double bottomPosition = -70;
+  var redrawObject;
 
   @override
   void initState() {
@@ -24,92 +44,243 @@ class _SearchPageState extends State<SearchPage> {
     this._blockchainService = new BlockchainService();
   }
 
-  void search(String input) {
-
-    print(input.substring(0, 5));
-
-    if (input.substring(0, 5) == "00000") {
-      this._blockchainService.getBlock(input).then((value) => {
-        setState(() {
-          this.test = value;
-        }),
-      });
-      return;
-    }
-
-    this._blockchainService.getTransaktion(input).then((value) => {
-      setState(() {
-        this.test = value;
-      }),
+  void setInput(String newInput) {
+    setState(() {
+      redrawObject = Object();
+      this.input = newInput;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: <Widget> [
-        searcher(context),
-        SizedBox(height: 20),
+      children: [
+        SizedBox(height: 30),
+        searchTile(context),
+        SizedBox(height: 30),
         result(context)
       ],
     );
   }
 
-  Widget searcher(BuildContext context) {
+  Widget searchTile(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(20),
+      margin: EdgeInsets.only(left: 10, right: 10, top: 20, bottom: 20),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.indigo,
         borderRadius: BorderRadius.circular(10.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: Colors.black45,
             blurRadius: 15.0,
             offset: Offset(0, 5),
           ),
         ],
       ),
       height: 60.0,
-      child: TextField(
-        controller: _controller,
-        onChanged: (input) => setState(() {}),
-        onSubmitted: (input) => this.search(input),
-        style: TextStyle(
-          color: Colors.black,
-          fontFamily: 'OpenSans',
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.only(top: 14.0),
-          prefixIcon: Icon(
-            Icons.search,
-            color: Colors.black,
-          ),
-          suffixIcon: _controller.text.length > 0
-            ? IconButton(
-                icon: Icon(
-                  Icons.close
+      child: Row(
+        children: [
+          Flexible(
+            child: TextField(
+              controller: _controller,
+              onChanged: (input) => setState(() {}),
+              onSubmitted: (input) => setInput(input),
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'OpenSans',
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.only(top: 14.0),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.white,
                 ),
-                color: Colors.black,
-                onPressed: () {
+                hintText: 'Suche Block oder Transaktion',
+              ),
+            ),
+          ),
+          _controller.text.length > 0
+              ? IconButton(
+              icon: Icon(
+                  Icons.close
+              ),
+              color: Colors.white,
+              onPressed: () {
+                setState(() {
+                  _controller.clear();
+                  this.blockDto = null;
+                });
+              }
+          )
+              : IconButton(
+              icon: Icon(
+                  Icons.qr_code_scanner
+              ),
+              color: Colors.white,
+              onPressed: () async {
+
+                var status = await Permission.camera.status;
+
+                if (status.isDenied) {
+                  Permission.camera.request();
+                }
+
+                final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => Scanner())
+                );
+
+                if (result != null) {
+                  print('$result');
                   setState(() {
-                    _controller.clear();
+                    this.input = result;
                   });
                 }
-              )
-            : null,
-          hintText: 'Suche eine Transaktion oder einen Block',
-        ),
+              }
+          ),
+        ],
       ),
     );
   }
 
   Widget result(BuildContext context) {
+    if (input != null) {
+      if (input.substring(0, 5) == "00000") {
+        return FutureBuilder(
+          key: ValueKey<Object>(redrawObject),
+          future: _blockchainService.getBlock(input),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              this.blockDto = snapshot.data;
+              return blockTile(context);
+            }
+            if (snapshot.hasError) {
+              return Center(
+                  child: Text('Es gibt keinen Block mit diesem Hash!')
+              );
+            }
+            return CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo));
+          }
+        );
+      }
+
+      return FutureBuilder(
+        future: _blockchainService.getTransaktion(input),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            this.transactionDto = snapshot.data;
+            return transactionTile(context);
+          }
+          if (snapshot.hasError) {
+            return Center(
+                child: Text('Es gibt keine Transaktion mit diesem Hash!')
+            );
+          }
+          return CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo));
+        }
+      );
+    }
+    return Text('');
+  }
+
+  Widget blockTile(BuildContext context) {
     return Container(
-      child: test == null
-        ? Text('Test')
-        : Text('Test2')
+        child: Column(
+          children: [
+            SearchBlockComponent(blockDto: this.blockDto, searchPreviousBlock: () => setInput(this.blockDto.prevBlock)),
+            SizedBox(height: 10),
+            toolBar(context),
+          ],
+        )
     );
   }
+
+  Widget transactionTile(BuildContext context) {
+    return Container(
+        child: Column(
+          children: [
+            SearchTransactionComponent(transactionDto: this.transactionDto, searchWallet: () => print('Not implemented yet')),
+            SizedBox(height: 10),
+            toolBar(context),
+          ],
+        )
+    );
+  }
+
+  Widget toolBar(BuildContext context) {
+    if (this.transactionDto != null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          qrCodeButton(context),
+          shareButton(context),
+        ],
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        prevBlockButton(context),
+        qrCodeButton(context),
+        shareButton(context),
+      ],
+    );
+  }
+  Widget shareButton(BuildContext context) {
+    return QuadraticButton(Icon(Icons.share, color: Colors.white), () => Share.share(this.blockDto == null ? 'https://www.blockchain.com/btc/tx/${this.transactionDto.hash}' : 'https://www.blockchain.com/btc/block/${this.blockDto.hash}'));
+  }
+
+  Widget qrCodeButton(BuildContext context) {
+    return QuadraticButton(Icon(Icons.qr_code_outlined, color: Colors.white), () => showBottomSheet());
+  }
+
+  Future<void> showBottomSheet() {
+    return showModalBottomSheet(context: context, builder: (BuildContext context) { return bottomSheet(context); }, enableDrag: true);
+  }
+
+  Widget bottomSheet(BuildContext context) {
+    return Container(
+      height: 500,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+           Container(
+              height: 5,
+              width: 50,
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(100))
+              ),
+            ),
+            SizedBox(height: 50),
+            Container(
+              height: 250,
+              width: 250,
+              child: BarcodeWidget(
+                data: this.blockDto == null ? this.transactionDto.hash : this.blockDto.hash,
+                barcode: Barcode.qrCode(),
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 50),
+            Text('Zum teilen QR-Code scannen', style: TextStyle(color: Colors.white),)
+          ],
+        )
+      ),
+      decoration: BoxDecoration(
+        color: Colors.indigo,
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10))
+      ),
+    );
+  }
+
+  Widget prevBlockButton(BuildContext context) {
+    return QuadraticButton(Icon(Icons.arrow_back_ios_outlined, color: Colors.white), () => this.setInput(blockDto.prevBlock));
+  }
 }
+
+
+
