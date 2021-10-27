@@ -2,22 +2,20 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:bitcoin_viewer/dtos/TransaktionDto.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/BlockDto.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/TransaktionDto.dart';
 import 'package:bitcoin_viewer/exceptions/BlockNotFoundException.dart';
 import 'package:bitcoin_viewer/exceptions/TransactionNotFoundException.dart';
 import 'package:bitcoin_viewer/exceptions/UnknownException.dart';
 import 'package:http/http.dart' as http;
-import 'package:bitcoin_viewer/dtos/BlockDto.dart';
+import 'package:bitcoin_viewer/dtos/BlockchainDto/BlockDto.dart';
 
 class BlockchainService {
-
-  final Map<String, String> header = {'&cor': 'true'};
 
   Future<BlockDto> getBlock(String blockHash) async {
 
     final response = await http.get(
-      'https://blockchain.info/rawblock/$blockHash',
-      headers: header
+      'https://api.blockcypher.com/v1/btc/main/blocks/$blockHash'
     );
 
     switch (response.statusCode) {
@@ -32,11 +30,11 @@ class BlockchainService {
     }
   }
 
+
   Future<TransactionDto> getTransaktion(String transactionHash) async {
 
     final response = await http.get(
-      'https://blockchain.info/rawtx/$transactionHash',
-      headers: header
+      'https://api.blockcypher.com/v1/btc/main/txs/$transactionHash',
     );
 
     switch (response.statusCode) {
