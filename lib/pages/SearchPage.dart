@@ -29,7 +29,6 @@ class _SearchPageState extends State<SearchPage> {
 
   final TextEditingController _controller = new TextEditingController();
   String input;
-  int searchCounter = 0;
   BlockchainService _blockchainService;
   BlockDto blockDto;
   TransactionDto transactionDto;
